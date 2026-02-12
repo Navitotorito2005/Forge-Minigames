@@ -28,12 +28,21 @@ _G.c_ld_deleteall = function(prefab) -- Deletes all items from a specified prefa
     end
 end
 
-_G.c_ld_deleteequipment = function() -- Deletes all equipment (weapons and armor)
+_G.c_ld_deleteequipment = function() -- Deletes all equipment. (weapons and armor)
     for k, v in pairs(_G.Ents) do
         if v.components.inventoryitem then
             v:Remove()
         end
     end
+end
+
+_G.c_ld_cleanpets = function() -- Remove all pets.
+    Log("log", "Removing all pets.")
+    _G.c_ld_deleteall("mean_flytrap")
+    _G.c_ld_deleteall("forge_abigail")
+    _G.c_ld_deleteall("forge_woby")
+    _G.c_ld_deleteall("babyspider")
+    _G.c_ld_deleteall("baby_ben")
 end
 
 _G.c_ld_maxhp = function(n) -- Set all players HP to 150.
@@ -109,15 +118,6 @@ _G.c_ld_spawnlucy_perplayer = function() -- Spawn one Riled Lucy per player in a
     for i = 1, #_G.AllNonSpectators do
         _G.SpawnPrefab("riledlucy").Transform:SetPosition(x + (math.sin(math.rad(deg)) * dist), 0, z + (math.cos(math.rad(deg)) * dist)) 
         deg = deg + deg_inc
-    end
-end
-
-_G.c_ld_cleanup = function() -- Remove all dropped items on the ground.
-    Log("log", "Removing all dropped items on the ground.")
-    for k, v in pairs(_G.Ents) do
-        if v.components.inventoryitem and v.components.inventoryitem.owner == nil then
-            v:Remove()
-        end
     end
 end
 
@@ -250,12 +250,14 @@ _G.c_ld_docountdown = function(n) -- Countdown in the chat for a "n" number of s
     end)
 end
 
-_G.c_ld_setupgame = function(teams, lucy_type) -- Setups the game without starting the countdown.
+_G.c_ld_setupgame = function(teams, lucy_type, timer) -- Setups the game.
     Log("log", "----------     SETTING UP LUCY DODGEBALL     ----------")
+    if not timer or timer <= 0 then
+        _G.TheNet:Announce("Setting up game...")
+    end
     _G.TheWorld.net.components.mutatormanager:UpdateMutators({friendly_fire = false})
-    _G.TheNet:Announce("Setting up game...")
     _G.c_ld_deleteequipment()
-    _G.c_ld_cleanup()
+    _G.c_ld_cleanpets()
     _G.c_ld_reviveall()
     _G.c_ld_equipall("reedtunic")
     _G.c_ld_maxhp(150)
@@ -269,27 +271,9 @@ _G.c_ld_setupgame = function(teams, lucy_type) -- Setups the game without starti
         _G.c_ld_teams(teams)
     end
     _G.c_ld_freezeplayers()
-end
-
-_G.c_ld_gamestart = function(teams, lucy_type, timer) -- Start the game.
-    Log("log", "----------     STARTING LUCY DODGEBALL     ----------")
-    _G.TheWorld.net.components.mutatormanager:UpdateMutators({friendly_fire = false})
-    _G.c_ld_deleteequipment()
-    _G.c_ld_cleanup()
-    _G.c_ld_reviveall()
-    _G.c_ld_equipall("reedtunic")
-    _G.c_ld_maxhp(150)
-    _G.c_ld_spreadplayers()
-    if lucy_type then
-        _G.c_ld_spawnlucy_perplayer()
-    else
-        _G.c_ld_spawnlucy()
+    if timer and timer > 0 then
+        _G.c_ld_docountdown(timer)
     end
-    if teams and teams > 1 and teams <= 4 then
-        _G.c_ld_teams(teams)
-    end
-    _G.c_ld_freezeplayers()
-    _G.c_ld_docountdown(timer)
 end
 
 -- This print function is not needed per se, but I thought it would make this mod more professional.
