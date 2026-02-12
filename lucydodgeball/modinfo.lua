@@ -1,5 +1,5 @@
 name = "Lucy Dodgeball"
-author = "Navi"
+author = "Navi, HaoDZ"
 version = "0.1"
 forumthread = ""
 
@@ -12,7 +12,7 @@ shipwrecked_compatible = false
 
 client_only_mod = false
 server_only_mod = true
-all_clients_require_mod = true
+all_clients_require_mod = false
 server_filter_tags = {}
 
 priority = -999

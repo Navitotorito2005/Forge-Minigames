@@ -3,14 +3,36 @@ local _G = GLOBAL
 -- Create a ReForged preset with proper settings.
 _G.AddPreset("dodgeball", "reforged", nil, "forge", "sandbox", "lavaarena", {no_revives = true, no_heal = true, no_restriction = true}, {atlas = "images/reforged.xml", tex = "preset_s1.tex",}, 0)
 _G.STRINGS.REFORGED.PRESETS["dodgeball"] = "Dodgeball"
+_G.TUNING.FORGE.RILEDLUCY.DAMAGE = 0
 
 -- All commands start with "c_ld_" to diferentiate from other commands.
 
-_G.c_ld_equipall = function() -- Equip Riled Lucy and Reed Tunic to all players.
-    Log("log", "Equipping all players with Riled Lucy and Reed Tunic.")
+_G.c_ld_equipall = function(prefab) -- Equips all players with an specified item.
+    if not prefab then
+        Log("error", "Must specify a prefab")
+    end
+    Log("log", "Equipping all players with" .. prefab)
     for k, v in pairs(_G.AllNonSpectators) do
-        _G.EquipItem("riledlucy", v)
-        _G.EquipItem("reedtunic", v)
+        _G.EquipItem(prefab, v)
+    end
+end
+
+_G.c_ld_deleteall = function(prefab) -- Deletes all items from a specified prefab.
+    if not prefab then
+        Log("error", "Must specify a prefab")
+    end
+    for k, v in pairs(_G.Ents) do
+        if v.prefab == prefab then
+            v:Remove()
+        end
+    end
+end
+
+_G.c_ld_deleteequipment = function() -- Deletes all equipment (weapons and armor)
+    for k, v in pairs(_G.Ents) do
+        if v.components.inventoryitem then
+            v:Remove()
+        end
     end
 end
 
@@ -213,25 +235,29 @@ _G.c_ld_removecolors = function(log) -- Remove all team colors from players.
     end
 end
 
-_G.c_ld_countdown = function(n) -- Countdown in the chat for a "n" number of seconds.
+_G.c_ld_docountdown = function(n) -- Countdown in the chat for a "n" number of seconds.
     local sec = n or 5
+    Log("log", "Starting game countdown for " .. sec .. " seconds.")
     _G.TheNet:Announce("Starting game...")
     for i = sec, 1, -1 do
         _G.TheWorld:DoTaskInTime(i, function() _G.TheNet:Announce(sec - i + 1 .. "...") end)
     end
     _G.TheWorld:DoTaskInTime(sec + 1, function() 
         _G.TheNet:Announce("GO!")
+        _G.c_ld_equipall("riledlucy")
         _G.c_ld_unfreezeplayers()
-        _G.TheWorld.net.components.mutatormanager:UpdateMutators({friendly_fire = true, no_recharge = false})
+        _G.TheWorld.net.components.mutatormanager:UpdateMutators({friendly_fire = true})
     end)
 end
 
-_G.c_ld_startgame = function(teams, lucy_type, timer) -- Start the game.
-    Log("log", "----------     STARTING LUCY DODGEBALL     ----------")
+_G.c_ld_setupgame = function(teams, lucy_type) -- Setups the game without starting the countdown.
+    Log("log", "----------     SETTING UP LUCY DODGEBALL     ----------")
     _G.TheWorld.net.components.mutatormanager:UpdateMutators({friendly_fire = false})
+    _G.TheNet:Announce("Setting up game...")
+    _G.c_ld_deleteequipment()
     _G.c_ld_cleanup()
     _G.c_ld_reviveall()
-    _G.c_ld_equipall()
+    _G.c_ld_equipall("reedtunic")
     _G.c_ld_maxhp(150)
     _G.c_ld_spreadplayers()
     if lucy_type then
@@ -243,7 +269,27 @@ _G.c_ld_startgame = function(teams, lucy_type, timer) -- Start the game.
         _G.c_ld_teams(teams)
     end
     _G.c_ld_freezeplayers()
-    _G.c_ld_startcountdown(timer)
+end
+
+_G.c_ld_gamestart = function(teams, lucy_type, timer) -- Start the game.
+    Log("log", "----------     STARTING LUCY DODGEBALL     ----------")
+    _G.TheWorld.net.components.mutatormanager:UpdateMutators({friendly_fire = false})
+    _G.c_ld_deleteequipment()
+    _G.c_ld_cleanup()
+    _G.c_ld_reviveall()
+    _G.c_ld_equipall("reedtunic")
+    _G.c_ld_maxhp(150)
+    _G.c_ld_spreadplayers()
+    if lucy_type then
+        _G.c_ld_spawnlucy_perplayer()
+    else
+        _G.c_ld_spawnlucy()
+    end
+    if teams and teams > 1 and teams <= 4 then
+        _G.c_ld_teams(teams)
+    end
+    _G.c_ld_freezeplayers()
+    _G.c_ld_docountdown(timer)
 end
 
 -- This print function is not needed per se, but I thought it would make this mod more professional.
